@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My GPT AI</title>
+<style>
+body{margin:0;background:#0b1020;color:white;font-family:Arial}
+#chat{height:90vh;overflow:auto;padding:10px}
+.msg{padding:10px;margin:6px;border-radius:12px;max-width:80%}
+.user{background:#4f7cff;margin-left:auto}
+.ai{background:#1e253f}
+#box{display:flex;padding:10px;background:#141a2b}
+textarea{flex:1;border:none;border-radius:8px;padding:10px}
+button{margin-left:6px;border:none;border-radius:8px;background:#4f7cff;color:white;padding:10px}
+</style>
+</head>
+<body>
+
+<div id="chat"></div>
+
+<div id="box">
+  <textarea id="input" placeholder="Ask anything..."></textarea>
+  <button onclick="send()">Send</button>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const messages = [];
+const LIMIT = 10;
+
+function add(role,text){
+  const d=document.createElement("div");
+  d.className="msg "+(role==="user"?"user":"ai");
+  d.textContent=text;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+  return d;
+}
+
+async function send(){
+  if(!input.value.trim())return;
+  messages.push({role:"user",content:input.value});
+  add("user",input.value);
+  input.value="";
+
+  const aiBox=add("ai","");
+  const res=await fetch("/api/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({messages:messages.slice(-LIMIT)})
+  });
+
+  const reader=res.body.getReader();
+  const decoder=new TextDecoder();
+  let aiText="";
+
+  while(true){
+    const {done,value}=await reader.read();
+    if(done)break;
+    aiText+=decoder.decode(value);
+    aiBox.textContent=aiText;
+  }
+
+  messages.push({role:"assistant",content:aiText});
+}
+</script>
+
+</body>
+</html>
